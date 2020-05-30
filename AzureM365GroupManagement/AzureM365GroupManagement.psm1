@@ -11,7 +11,7 @@ function Set-M365GroupCreationAllowedGroup {
 
         .PARAMETER DisplayName
         The full name of the group in Azure Active Directory. (Required)
-        
+
         .PARAMETER ObjectId
         The Group or ObjectId of the group in Azure Active Directory (e.g. fd4ec70a-274a-4c23-9c47-5dbc1a69c342). (Required)
 
@@ -40,7 +40,7 @@ function Set-M365GroupCreationAllowedGroup {
         [string]
         $ObjectId
     )
-    
+
     if (!(Test-GroupUnifiedDirectorySetting)) {
         Write-Warning -Message "No Group.Unified Directory Setting currently exists. Run New-GroupUnifiedDirectorySetting to create Group.Unified directory setting first."
         RETURN
@@ -48,7 +48,7 @@ function Set-M365GroupCreationAllowedGroup {
 
     if ($PSBoundParameters.ContainsKey("DisplayName")) {
         $groupFound = Get-AzureADGroup -SearchString $DisplayName
-            
+
         switch ($groupFound.Count) {
             0 { Write-Error -Message "No Azure AD groups match the name $DisplayName. Please try again."; RETURN }
             1 { $groupFoundId = $groupFound.ObjectId; break }
@@ -70,12 +70,12 @@ function Set-M365GroupCreationAllowedGroup {
 
     $groupUnifiedObject = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -EQ -Value "Group.Unified"
     $groupUnifiedObject["GroupCreationAllowedGroupId"] = $groupFoundId
-        
+
     try {
         if ($PSCmdlet.ShouldProcess($groupFoundId)) {
             Set-AzureADDirectorySetting -Id $groupUnifiedObject.Id -DirectorySetting $groupUnifiedObject -ErrorAction STOP
             Get-GroupUnifiedDirectorySettings
-        }        
+        }
     }
     catch {
         Write-Error -Message "Error enabling Group.Unified Azure AD Directory Setting: $($_.Exception)"
@@ -84,7 +84,7 @@ function Set-M365GroupCreationAllowedGroup {
 } # End of Set-M365GroupCreationAllowedGroup
 
 function Remove-M365GroupCreationAllowedGroup {
-    
+
     <#
         .SYNOPSIS
         Clears the group setting for the group that is allowed to create Microsoft 365 Groups.
@@ -97,7 +97,7 @@ function Remove-M365GroupCreationAllowedGroup {
 
         This example clears the allowed group setting for any group configured to create Microsoft 365 Groups.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Medium'
@@ -113,7 +113,7 @@ function Remove-M365GroupCreationAllowedGroup {
             if ($PSCmdlet.ShouldProcess($currentGroupId, 'Clearing GroupCreationAllowedGroupId')) {
                 Set-AzureADDirectorySetting -Id $groupUnifiedObject.Id -DirectorySetting $groupUnifiedObject -ErrorAction STOP
                 Get-GroupUnifiedDirectorySettings
-            }            
+            }
         }
         catch {
             Write-Error -Message "Error clearing GroupCreationAllowedGroupId Azure AD Directory Setting: $($_.Exception)"
@@ -126,7 +126,7 @@ function Remove-M365GroupCreationAllowedGroup {
 } # End of Remove-M365GroupCreationAllowedGroup
 
 function Enable-M365GroupCreation {
-    
+
     <#
         .SYNOPSIS
         Configures Microsoft 365 Group creation to True.
@@ -139,7 +139,7 @@ function Enable-M365GroupCreation {
 
         This example configures Microsoft 365 Group creation to True.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Medium'
@@ -149,7 +149,7 @@ function Enable-M365GroupCreation {
     if (Test-GroupUnifiedDirectorySetting) {
         $groupUnifiedObject = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -Value "Group.Unified" -EQ
         $groupUnifiedObject["EnableGroupCreation"] = "True"
-        
+
         try {
             if ($PSCmdlet.ShouldProcess('EnableGroupCreation', 'Setting value to True')) {
                 Set-AzureADDirectorySetting -Id $groupUnifiedObject.Id -DirectorySetting $groupUnifiedObject -ErrorAction STOP
@@ -168,7 +168,7 @@ function Enable-M365GroupCreation {
 } # End of Enable-M365GroupCreation
 
 function Disable-M365GroupCreation {
-    
+
     <#
         .SYNOPSIS
         Configures Microsoft 365 Group creation to False.
@@ -181,13 +181,13 @@ function Disable-M365GroupCreation {
 
         This example configures Microsoft 365 Group creation to False.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Medium'
     )]
     param()
-    
+
     if (Test-GroupUnifiedDirectorySetting) {
         $groupUnifiedObject = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -Value "Group.Unified" -EQ
         $groupUnifiedObject["EnableGroupCreation"] = "False"
@@ -208,7 +208,7 @@ function Disable-M365GroupCreation {
 } # End of Disable-M365GroupCreation
 
 function Set-M365GroupUsageGuidelinesUrl {
-    
+
     <#
         .SYNOPSIS
         Configures the URL for the Group Usage Guidelines.
@@ -224,7 +224,7 @@ function Set-M365GroupUsageGuidelinesUrl {
 
         This will set the Group Usage Guidelines URL to http://guidelines.jeffbrown.tech.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Low'
@@ -234,7 +234,7 @@ function Set-M365GroupUsageGuidelinesUrl {
         [string]
         $URL
     )
-    
+
     if (Test-GroupUnifiedDirectorySetting) {
         $groupUnifiedObject = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -EQ -Value "Group.Unified"
         $groupUnifiedObject["UsageGuidelinesUrl"] = $URL
@@ -244,7 +244,6 @@ function Set-M365GroupUsageGuidelinesUrl {
                 Set-AzureADDirectorySetting -Id $groupUnifiedObject.Id -DirectorySetting $groupUnifiedObject -ErrorAction STOP
                 Get-GroupUnifiedDirectorySettings
             }
-            
         }
         catch {
             Write-Error -Message "Error enabling Group.Unified Azure AD Directory Setting: $($_.Exception)"
@@ -257,7 +256,7 @@ function Set-M365GroupUsageGuidelinesUrl {
 } # End of Set-M365GroupUsageGuidelinesUrl
 
 function Remove-M365GroupUsageGuidelinesUrl {
-    
+
     <#
         .SYNOPSIS
         Removes the URL for the Group Usage Guidelines.
@@ -270,7 +269,7 @@ function Remove-M365GroupUsageGuidelinesUrl {
 
         This example removes the URL for the Group Usage Guidelines.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Medium'
@@ -298,7 +297,7 @@ function Remove-M365GroupUsageGuidelinesUrl {
 } # End of Remove-M365GroupUsageGuidelinesUrl
 
 function Test-GroupUnifiedDirectorySetting {
-    
+
     <#
         .SYNOPSIS
         Tests for the existence of a Group.Unified Directory Setting.
@@ -308,15 +307,16 @@ function Test-GroupUnifiedDirectorySetting {
         This is an internal function to the module and should not be exported.
 
         .OUTPUTS
-        System.Boolean. Test-GroupUnifiedDirectorySettings returns $true if the directory setting exists and$false if it does not.
+        System.Boolean
 
         .EXAMPLE
         Test-GroupUnifiedDirectorySetting
 
         This example tests for the existence of a Group.Unified Directory Setting and returns $true or $false.
     #>
-    
+
     [CmdletBinding()]
+    [OutputType('System.Boolean')]
     param ()
 
     $foundGroupUnified = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -EQ -Value "Group.Unified"
@@ -331,7 +331,7 @@ function Get-GroupUnifiedDirectorySettings {
 
         .DESCRIPTION
         Displays the current Group.Unified Directory Settings.
-        
+
         .EXAMPLE
         Get-GroupUnifiedDirectorySettings
 
@@ -356,7 +356,7 @@ function Get-GroupUnifiedDirectorySettings {
 } # End of Get-GroupUnifiedDirectorySettings
 
 function New-GroupUnifiedDirectorySetting {
-    
+
     <#
         .SYNOPSIS
         Creates a new Azure AD Directory Setting using the Group.Unified template.
@@ -369,7 +369,7 @@ function New-GroupUnifiedDirectorySetting {
 
         Creates a new Azure AD Directory Setting using the Group.Unified template.
     #>
-    
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'Medium'
@@ -408,8 +408,8 @@ function Remove-GroupUnifiedDirectorySetting {
         Remove-GroupUnifiedDirectorySetting
 
         This example will remove the Group.Unified Directory Setting in Azure AD.
-    #>    
-    
+    #>
+
     [CmdletBinding(
         SupportsShouldProcess,
         ConfirmImpact = 'High'
