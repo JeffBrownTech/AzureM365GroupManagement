@@ -296,6 +296,220 @@ function Remove-M365GroupUsageGuidelinesUrl {
     }
 } # End of Remove-M365GroupUsageGuidelinesUrl
 
+function Add-CustomBlockedWord {
+
+    <#
+        .SYNOPSIS
+        Adds a word to the CustomBlockedWordsList for Microsoft 365 groups.
+
+        .DESCRIPTION
+        Adds a word to the CustomBlockedWordsList for Microsoft 365 groups.
+
+        .PARAMETER Word
+        The word to add to the CustomBlockedWordsList property. (Required)
+
+        .EXAMPLE
+        Add-CustomBlockedWord -Word 'CEO'
+
+        This example adds the word 'CEO' to the CustomBlockedWordsList property.
+
+        .EXAMPLE
+        Add-CustomBlockedWord -Word 'CEO','HR'
+
+        This example adds the words 'CEO' and 'HR' to the CustomBlockedWordsList property.
+    #>
+
+    [CmdletBinding(
+        SupportsShouldProcess,
+        ConfirmImpact = 'Low'
+    )]
+    param (
+        [Parameter(Position = 0, Mandatory)]
+        [string[]]
+        $Word
+    )
+
+    begin {
+        $groupUnifiedObject = Get-GroupUnifiedDirectoryObject
+        $blockedWordList = $groupUnifiedObject["CustomBlockedWordsList"]
+        [System.Collections.ArrayList]$blockedWordArray = $blockedWordList.Split(",")
+        $groupUnifiedId = ($groupUnifiedObject).Id
+        $wordListModified = $false
+    }
+
+    process {
+        foreach ($item in $Word) {
+
+            if (Find-BlockedWord -Word $item -ArrayToSearch $blockedWordArray) {
+                Write-Warning -Message "$item is already listed in the custom blocked word list"
+            }
+            else {
+                if ($PSCmdlet.ShouldProcess('CustomBlockedWordsList', "Adding $item")) {
+                    $blockedWordArray.Add($item) | Out-Null
+                    $wordListModified = $true
+                }
+            }
+        }
+    }
+
+    end {
+        if ($wordListModified) {
+            $groupUnifiedObject["CustomBlockedWordsList"] = $blockedWordArray -join ","
+
+            try {
+                if ($PSCmdlet.ShouldProcess('CustomBlockedWordsList')) {
+                    Set-AzureADDirectorySetting -Id $groupUnifiedId -DirectorySetting $groupUnifiedObject -ErrorAction STOP
+                    Get-GroupUnifiedDirectorySettings | Where-Object -Property Name -EQ -Value 'CustomBlockedWordsList'
+                }
+            }
+            catch {
+                Write-Error -Message "Error setting Group.Unified Blocked Words List: $($_.Exception)"
+                RETURN
+            }
+        }
+    }
+} # End of Add-CustomBlockedWord
+
+function Remove-CustomBlockedWord {
+
+    <#
+        .SYNOPSIS
+        Removes a word from the CustomBlockedWordsList for Microsoft 365 groups.
+
+        .DESCRIPTION
+        Removes a word from the CustomBlockedWordsList for Microsoft 365 groups.
+
+        .PARAMETER Word
+        The word to remove from the CustomBlockedWordsList property. (Required)
+
+        .EXAMPLE
+        Remove-CustomBlockedWord -Word 'CEO'
+
+        This example removes the word 'CEO' from the CustomBlockedWordsList property.
+
+        .EXAMPLE
+        remove-CustomBlockedWord -Word 'CEO','HR'
+
+        This example removes the words 'CEO' and 'HR' from the CustomBlockedWordsList property.
+    #>
+
+    [CmdletBinding(
+        SupportsShouldProcess,
+        ConfirmImpact = 'Low'
+    )]
+    param (
+        [Parameter(Position = 0, Mandatory)]
+        [string[]]
+        $Word
+    )
+
+    begin {
+        $groupUnifiedObject = Get-GroupUnifiedDirectoryObject
+        $blockedWordList = $groupUnifiedObject["CustomBlockedWordsList"]
+        [System.Collections.ArrayList]$blockedWordArray = $blockedWordList.Split(",")
+        $groupUnifiedId = ($groupUnifiedObject).Id
+        $wordListModified = $false
+    }
+
+    process {
+        foreach ($item in $Word) {
+            if (Find-BlockedWord -Word $item -ArrayToSearch $blockedWordArray) {
+                if ($PSCmdlet.ShouldProcess('CustomBlockedWordsList', "Adding $item")) {
+                    $blockedWordArray.Remove($item) | Out-Null
+                    $wordListModified = $true
+                }
+            }
+            else {
+                Write-Warning -Message "$item is not listed in the custom blocked word list for removal"
+            }
+        }
+    }
+
+    end {
+        if ($wordListModified) {
+            $groupUnifiedObject["CustomBlockedWordsList"] = $blockedWordArray -join ","
+
+            try {
+                if ($PSCmdlet.ShouldProcess('CustomBlockedWordsList')) {
+                    Set-AzureADDirectorySetting -Id $groupUnifiedId -DirectorySetting $groupUnifiedObject -ErrorAction STOP
+                    Get-GroupUnifiedDirectorySettings | Where-Object -Property Name -EQ -Value 'CustomBlockedWordsList'
+                }
+            }
+            catch {
+                Write-Error -Message "Error setting Group.Unified Blocked Words List: $($_.Exception)"
+                RETURN
+            }
+        }
+    }
+} # End of Remove-CustomBlockedWord
+
+function Get-CustomBlockedWordsList {
+    <#
+        .SYNOPSIS
+        Lists the value of CustomBlockedWordsList property.
+
+        .DESCRIPTION
+        Lists the value of CustomBlockedWordsList property.
+
+        .OUTPUTS
+        System.String : List of blocked words separated by commas
+
+        .EXAMPLE
+        Get-CustomBlockedWordsList
+
+        Output: CEO,HR,Executive
+    #>
+
+    [CmdletBinding()]
+    [OutputType('System.String')]
+    param ()
+
+    Get-GroupUnifiedDirectorySettings | Where-Object -Property Name -EQ -Value 'CustomBlockedWordsList' | Select-Object -ExpandProperty Value
+}
+
+function Find-BlockedWord {
+    <#
+        .SYNOPSIS
+        Finds if a blocked word exists in an array.
+
+        .DESCRIPTION
+        Finds if a blocked word exists in an array.
+        This is an internal function to the module and should not be exported.
+
+        .PARAMETER Word
+        The word to search for in the array.
+
+        .PARAMETER ArrayToSearch
+        The array to search for the matching word.
+
+        .OUTPUTS
+        System.Boolean : Returns true or false if the word exists in the array
+
+        .EXAMPLE
+        Find-BlockedWord -Word 'CEO' -ArrayToSearch $currentWordArray
+
+        This example will search $currentWordArray for the string 'CEO' and return true or false if it does.
+    #>
+
+    [CmdletBinding()]
+    [OutputType('System.Boolean')]
+    param (
+        [Parameter(Mandatory)]
+        [string]
+        $Word,
+
+        [Parameter(Mandatory)]
+        [array]
+        $ArrayToSearch
+    )
+
+    [bool]$found = $false
+
+    if ($ArrayToSearch -icontains $Word) { $found = $true }
+
+    $found
+}
+
 function Test-GroupUnifiedDirectorySetting {
 
     <#
@@ -323,6 +537,15 @@ function Test-GroupUnifiedDirectorySetting {
     if ($null -eq $foundGroupUnified) { RETURN $false } else { RETURN $true }
 } # End of Test-GroupUnifiedDirectorySetting
 
+function Get-GroupUnifiedDirectoryObject {
+    <##>
+
+    [CmdletBinding()]
+    param ()
+
+    $groupUnifiedObject = Get-AzureADDirectorySetting | Where-Object -Property DisplayName -EQ -Value "Group.Unified"
+    $groupUnifiedObject
+}
 function Get-GroupUnifiedDirectorySettings {
 
     <#
