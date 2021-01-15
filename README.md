@@ -32,6 +32,12 @@ The AzureM365GRoupManagement module is also available for download through the [
 Install-Module -Name AzureM365GroupManagement
 ```
 
+To view all the commands available in the module, use the **Get-Command** cmdlet while specifying the module name:
+
+```powershell
+Get-Command -Module AzureM365GroupManagement
+```
+
 ## Overview of Group Creation
 
 Many organizations want to control if their users can Microsoft 365 groups (formerly known as Office 365 groups). Typically organizations disable group creation to prevent users from creating teams in Microsoft Teams. The goal of this module to provide commands that can easily enable and disable the creation of Microsoft 365 groups. The module also provides commands to set the allowed group of users who can create groups.
